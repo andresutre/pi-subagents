@@ -110,13 +110,11 @@ const SETTLE_HELPER = [
 	"}",
 ].join("\n");
 
-function buildTasksScript(steps: unknown, originalTask: string | undefined, allowChildFields: boolean): string {
+function buildTasksScript(steps: unknown, originalTask: string | undefined): string {
 	if (!Array.isArray(steps) || steps.length === 0) throw new Error("tasks must be a non-empty array of { agent, task } items.");
 	const children = steps.map((item, index): StepChild => {
 		const path = `tasks[${index}]`;
-		const record = allowChildFields
-			? exactFields(item, path, ["agent", "task", ...CHILD_FIELDS], "Each tasks item accepts agent and task, plus optional cwd and model.")
-			: exactFields(item, path, ["agent", "task"], "Each tasks item accepts only agent and task.");
+		const record = exactFields(item, path, ["agent", "task", ...CHILD_FIELDS], "Each tasks item accepts agent and task, plus optional cwd and model.");
 		const agent = nonEmptyString(record.agent, `${path}.agent`);
 		const task = nonEmptyString(record.task, `${path}.task`);
 		const taskExpression = compileTemplate(task, {
@@ -155,13 +153,13 @@ function buildChainScript(steps: unknown, originalTask: string | undefined): str
 			if (!Array.isArray(items) || items.length === 0) throw new Error(`${path}.parallel must be a non-empty array of { agent, task } items.`);
 			stepChildren = items.map((item, itemIndex): StepChild => {
 				const itemPath = `${path}.parallel[${itemIndex}]`;
-				const itemRecord = exactFields(item, itemPath, ["agent", "task"], "Each parallel item accepts only agent and task.");
+				const itemRecord = exactFields(item, itemPath, ["agent", "task", ...CHILD_FIELDS], "Each parallel item accepts agent and task, plus optional cwd and model.");
 				const agent = nonEmptyString(itemRecord.agent, `${itemPath}.agent`);
 				const task = nonEmptyString(itemRecord.task, `${itemPath}.task`);
-				return { key: `step-${number}-${itemIndex + 1}`, agent, fields: {}, taskExpression: compileTemplate(task, { path: `${itemPath}.task`, hasOriginalTask, previous, outputs }) };
+				return { key: `step-${number}-${itemIndex + 1}`, agent, fields: childFields(itemRecord, itemPath), taskExpression: compileTemplate(task, { path: `${itemPath}.task`, hasOriginalTask, previous, outputs }) };
 			});
 		} else {
-			const record = exactFields(step, path, ["agent", "task", "as"], "A sequential step accepts only agent, task and as; a parallel step accepts only parallel.");
+			const record = exactFields(step, path, ["agent", "task", "as", ...CHILD_FIELDS], "A sequential step accepts agent, task, as, cwd and model; a parallel step accepts only parallel.");
 			const agent = nonEmptyString(record.agent, `${path}.agent`);
 			let task: string;
 			if (record.task === undefined) {
@@ -173,7 +171,7 @@ function buildChainScript(steps: unknown, originalTask: string | undefined): str
 				if (outputs.has(record.as)) throw new Error(`${path}.as '${record.as}' is already used by an earlier step.`);
 				outputName = record.as;
 			}
-			stepChildren = [{ key: `step-${number}`, agent, fields: {}, taskExpression: compileTemplate(task, { path: `${path}.task`, hasOriginalTask, previous, outputs }) }];
+			stepChildren = [{ key: `step-${number}`, agent, fields: childFields(record, path), taskExpression: compileTemplate(task, { path: `${path}.task`, hasOriginalTask, previous, outputs }) }];
 		}
 		lines.push(
 			`const run${number} = ${runsAllCall(stepChildren)};`,
@@ -188,11 +186,7 @@ function buildChainScript(steps: unknown, originalTask: string | undefined): str
 	return lines.join("\n");
 }
 
-/**
- * Validate exact data shapes and expand them into a package-owned workflow script.
- * `childFields` admits optional per-child cwd and model on tasks items; the named `parallel`
- * resource enables it because its args are not part of the provider schema.
- */
-export function buildStructuredWorkflowScript(kind: StructuredWorkflowKind, steps: unknown, originalTask: string | undefined, options: { childFields?: boolean } = {}): string {
-	return kind === "tasks" ? buildTasksScript(steps, originalTask, options.childFields === true) : buildChainScript(steps, originalTask);
+/** Validate exact data shapes and expand them into a package-owned workflow script. */
+export function buildStructuredWorkflowScript(kind: StructuredWorkflowKind, steps: unknown, originalTask: string | undefined): string {
+	return kind === "tasks" ? buildTasksScript(steps, originalTask) : buildChainScript(steps, originalTask);
 }

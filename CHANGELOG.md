@@ -4,7 +4,7 @@
 
 ### Added
 
-- Items in the built-in `parallel` workflow's `args.tasks` accept optional `cwd` and `model`, so one call can fan out across several repositories or mix models without writing a script. Before, those fields were rejected with "Each tasks item accepts only agent and task". They reach `runs.all` as data, like `task`. The provider schema is unchanged; structured-mode `tasks` and `chain` still take only their existing fields.
+- Children of the built-in `parallel` workflow (`args.tasks`), and `tasks` items and `chain` steps and group members when workflow scripts are disabled, accept optional `cwd` and `model`. One call can now fan out across several repositories or worktrees, or mix models, without writing a script. Before, these fields were rejected with "accepts only agent and task". They reach `runs.all` as data, like `task`. The structured-mode `tasks`/`chain` schema grows from 737 to 911 characters.
 
 ## [0.79.2] - 2026-10-20
 
