@@ -4,7 +4,7 @@
 
 ### Added
 
-- Children of the built-in `parallel` workflow (`args.tasks`), and `tasks` items and `chain` steps and group members when workflow scripts are disabled, accept optional `cwd` and `model`. One call can now fan out across several repositories or worktrees, or mix models, without writing a script. Before, these fields were rejected with "accepts only agent and task". They reach `runs.all` as data, like `task`. The structured-mode `tasks`/`chain` schema grows from 737 to 911 characters.
+- Children of the built-in `parallel` workflow (`args.tasks`), and `tasks` items and `chain` steps and group members when workflow scripts are disabled, accept optional `cwd` and `model`. One call can now fan out across several repositories or worktrees, or mix models, without writing a script. Before, these fields were rejected with "accepts only agent and task". They reach `runs.all` as data, like `task`. The structured-mode `tasks`/`chain` schema grows from 737 to 911 characters. Thanks to [@andresutre](https://github.com/andresutre) for [#2985](https://github.com/nicobailon/pi-subagents/pull/2985).
 
 ## [0.79.2] - 2026-10-20
 
